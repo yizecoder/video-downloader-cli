@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a reproducible downloader problem
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Never paste Cookie values, private URLs, or account information.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: v2.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Video platform
+      options:
+        - Bilibili
+        - YouTube
+        - Douyin
+        - Xiaohongshu
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Use a public URL or redact the video ID.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized output
+      render: shell
+    validations:
+      required: true

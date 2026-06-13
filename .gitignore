@@ -1,0 +1,33 @@
+# 自动生成的下载目录
+downloads/
+cookies.txt
+space.bilibili.com_cookies.txt
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 虚拟环境
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 日志
+*.log
+
+# 测试和工具缓存
+.coverage
+.pytest_cache/
+.ruff_cache/

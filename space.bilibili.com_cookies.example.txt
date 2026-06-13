@@ -1,0 +1,3 @@
+# Netscape HTTP Cookie File
+# This is a format-only example. Never commit a real Cookie value.
+.bilibili.com	TRUE	/	TRUE	2147483647	EXAMPLE_COOKIE	REPLACE_ME
