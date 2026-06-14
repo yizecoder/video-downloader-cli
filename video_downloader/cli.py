@@ -38,9 +38,24 @@ def _cookie_summary(path: Path) -> str:
 
 def check_environment(settings: Settings | None = None) -> bool:
     settings = settings or load_settings()
+    js_runtime = shutil.which("deno") or shutil.which("node")
     checks = [
         ("Python >= 3.10", sys.version_info >= (3, 10), sys.version.split()[0]),
-        ("yt-dlp", importlib.util.find_spec("yt_dlp") is not None, "pip install yt-dlp"),
+        (
+            "yt-dlp",
+            importlib.util.find_spec("yt_dlp") is not None,
+            'pip install -U "yt-dlp[default]"',
+        ),
+        (
+            "yt-dlp-ejs",
+            importlib.util.find_spec("yt_dlp_ejs") is not None,
+            'pip install -U "yt-dlp[default]"',
+        ),
+        (
+            "YouTube JS runtime",
+            js_runtime is not None,
+            "安装 Deno 2.3+ 或 Node.js 22+",
+        ),
         ("requests", importlib.util.find_spec("requests") is not None, "pip install requests"),
         ("ffmpeg", shutil.which("ffmpeg") is not None, "安装 ffmpeg 并加入 PATH"),
     ]
@@ -50,6 +65,8 @@ def check_environment(settings: Settings | None = None) -> bool:
         suffix = f"：{detail}" if not ok else ""
         print(f"  [{'OK' if ok else '缺失'}] {name}{suffix}")
         required_ok = required_ok and ok
+    if js_runtime:
+        print(f"  YouTube JS runtime：{Path(js_runtime).name}")
 
     bili_status = inspect_cookie_file(settings.bilibili_cookie_file)
     print(f"  下载目录：{settings.download_dir.resolve()}")

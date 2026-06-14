@@ -2,6 +2,16 @@
 
 All notable changes are documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- Restore authenticated YouTube downloads by installing the yt-dlp EJS
+  component and automatically selecting Deno or Node.js for JS challenges.
+- Report expired YouTube Cookies and age-verification failures separately
+  instead of misclassifying them as unavailable video quality.
+- Ignore platform-specific exported Cookie files to prevent accidental commits.
+
 ## [2.0.0] - 2026-06-14
 
 ### Added

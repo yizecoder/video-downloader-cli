@@ -27,6 +27,12 @@ def build_network_args(platform: str, settings: Settings) -> list[str]:
     elif platform == "bilibili":
         args += ["--proxy", ""]
 
+    if platform == "youtube":
+        if shutil.which("deno"):
+            args += ["--js-runtimes", "deno"]
+        elif shutil.which("node"):
+            args += ["--js-runtimes", "node"]
+
     if platform == "bilibili":
         if settings.bilibili_cookie_file.is_file():
             args += ["--cookies", str(settings.bilibili_cookie_file)]
@@ -66,6 +72,25 @@ def build_video_format(min_quality: str) -> str:
 
 
 def format_error(platform: str, stderr: str) -> str:
+    if platform == "youtube" and (
+        "n challenge solving failed" in stderr
+        or "No supported JavaScript runtime" in stderr
+    ):
+        return (
+            "YouTube JS 挑战解析失败。请安装 Deno，或安装 Node.js 22+，"
+            "并通过 pip install -U \"yt-dlp[default]\" 安装 EJS 组件。"
+        )
+    if platform == "youtube" and "cookies are no longer valid" in stderr:
+        return (
+            "YouTube Cookie 已失效或被浏览器轮换。请在无痕窗口登录 YouTube，"
+            "同一标签页打开 https://www.youtube.com/robots.txt 后重新导出 Cookie，"
+            "导出后立即关闭整个无痕窗口。"
+        )
+    if platform == "youtube" and "Sign in to confirm your age" in stderr:
+        return (
+            "该视频有年龄限制，当前 YouTube Cookie 未通过账号验证。"
+            "请重新导出有效的登录 Cookie 后重试。"
+        )
     if "Failed to decrypt with DPAPI" in stderr:
         return (
             "浏览器 Cookie 使用新版应用绑定加密，yt-dlp 无法解密。"

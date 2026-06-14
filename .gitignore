@@ -2,6 +2,7 @@
 downloads/
 cookies.txt
 space.bilibili.com_cookies.txt
+*_cookies.txt
 .env
 .env.*
 !.env.example

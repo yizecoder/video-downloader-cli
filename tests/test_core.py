@@ -167,6 +167,17 @@ class CoreTests(unittest.TestCase):
         self.assertIn("height>=1080", strict)
         self.assertNotIn("bestvideo*+bestaudio/best", strict)
 
+    @patch("video_downloader.adapters.ytdlp.shutil.which")
+    def test_youtube_uses_installed_node_runtime(self, mocked_which):
+        mocked_which.side_effect = lambda name: "C:/node.exe" if name == "node" else None
+        with tempfile.TemporaryDirectory() as directory:
+            args = build_network_args(
+                "youtube",
+                self.make_settings(directory),
+            )
+        self.assertIn("--js-runtimes", args)
+        self.assertEqual(args[args.index("--js-runtimes") + 1], "node")
+
     def test_cookie_login_detection(self):
         content = (
             "# Netscape HTTP Cookie File\n"
@@ -233,6 +244,22 @@ class CoreTests(unittest.TestCase):
             "ERROR: [youtube] abc: Video unavailable",
         )
         self.assertIn("视频 ID", message)
+
+    def test_rotated_youtube_cookie_error_is_actionable(self):
+        message = format_error(
+            "youtube",
+            "WARNING: The provided YouTube account cookies are no longer valid.",
+        )
+        self.assertIn("无痕窗口", message)
+        self.assertIn("robots.txt", message)
+
+    def test_youtube_js_challenge_error_is_actionable(self):
+        message = format_error(
+            "youtube",
+            "WARNING: n challenge solving failed",
+        )
+        self.assertIn("Node.js 22+", message)
+        self.assertIn("yt-dlp[default]", message)
 
     def test_dpapi_error_has_actionable_message(self):
         message = format_error(
