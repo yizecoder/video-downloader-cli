@@ -11,6 +11,8 @@ from video_downloader.adapters.ytdlp import (
     build_network_args,
     build_video_format,
     format_error,
+    has_mp4_drm_markers,
+    reject_bilibili_course_drm,
 )
 from video_downloader.config import (
     DEFAULT_BILIBILI_COOKIE_FILE,
@@ -166,6 +168,41 @@ class CoreTests(unittest.TestCase):
         strict = build_video_format("1080p")
         self.assertIn("height>=1080", strict)
         self.assertNotIn("bestvideo*+bestaudio/best", strict)
+
+    def test_mp4_drm_markers_require_encryption_boxes(self):
+        encrypted = b"ftyp....moov....pssh....sinf....tenc....encv"
+        self.assertTrue(has_mp4_drm_markers(encrypted))
+        self.assertFalse(has_mp4_drm_markers(b"ftyp....moov....sinf"))
+        self.assertFalse(has_mp4_drm_markers(b"ftyp....moov....pssh....sinf"))
+
+    @patch("video_downloader.adapters.ytdlp.requests.Session")
+    def test_bilibili_course_drm_stops_before_download(self, mocked_session):
+        response = mocked_session.return_value.get.return_value
+        response.__enter__.return_value = response
+        response.__exit__.return_value = None
+        response.raw.read.return_value = (
+            b"ftyp....moov....pssh....sinf....tenc....encv"
+        )
+        metadata = {
+            "extractor_key": "BilibiliCheese",
+            "requested_formats": [{"url": "https://media.example/video.m4s"}],
+        }
+
+        with self.assertRaisesRegex(RuntimeError, "DRM 加密媒体流"):
+            reject_bilibili_course_drm(
+                "https://www.bilibili.com/cheese/play/ep1",
+                metadata,
+            )
+
+        response.raw.read.assert_called_once()
+
+    @patch("video_downloader.adapters.ytdlp.requests.Session")
+    def test_regular_bilibili_video_skips_drm_probe(self, mocked_session):
+        reject_bilibili_course_drm(
+            "https://www.bilibili.com/video/BV1example",
+            {"extractor_key": "Bilibili"},
+        )
+        mocked_session.assert_not_called()
 
     @patch("video_downloader.adapters.ytdlp.shutil.which")
     def test_youtube_uses_installed_node_runtime(self, mocked_which):

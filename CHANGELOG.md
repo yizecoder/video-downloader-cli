@@ -11,6 +11,8 @@ All notable changes are documented in this file.
 - Report expired YouTube Cookies and age-verification failures separately
   instead of misclassifying them as unavailable video quality.
 - Ignore platform-specific exported Cookie files to prevent accidental commits.
+- Detect DRM-protected Bilibili course streams from their MP4 headers and stop
+  before downloading the complete encrypted media files.
 
 ## [2.0.0] - 2026-06-14
 

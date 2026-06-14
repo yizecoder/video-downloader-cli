@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import requests
+
 from ..config import Settings
 from ..models import DownloadResult
 from ..utils import (
@@ -18,6 +20,8 @@ from ..utils import (
     normalize_quality,
     validate_minimum_quality,
 )
+
+DRM_HEADER_BYTES = 64 * 1024
 
 
 def build_network_args(platform: str, settings: Settings) -> list[str]:
@@ -144,6 +148,51 @@ def get_metadata(url: str, platform: str, settings: Settings) -> dict:
         return {}
 
 
+def has_mp4_drm_markers(data: bytes) -> bool:
+    encryption_scheme = any(
+        marker in data for marker in (b"tenc", b"encv", b"enca")
+    )
+    return b"pssh" in data and b"sinf" in data and encryption_scheme
+
+
+def _selected_formats(metadata: dict) -> list[dict]:
+    selected = metadata.get("requested_formats")
+    if isinstance(selected, list):
+        return [item for item in selected if isinstance(item, dict)]
+    return []
+
+
+def reject_bilibili_course_drm(url: str, metadata: dict) -> None:
+    extractor = str(metadata.get("extractor_key") or "")
+    if extractor != "BilibiliCheese" and "/cheese/" not in url:
+        return
+
+    session = requests.Session()
+    session.trust_env = False
+    for media_format in _selected_formats(metadata):
+        media_url = str(media_format.get("url") or "")
+        if not media_url:
+            continue
+        headers = dict(media_format.get("http_headers") or {})
+        headers["Range"] = f"bytes=0-{DRM_HEADER_BYTES - 1}"
+        try:
+            with session.get(
+                media_url,
+                headers=headers,
+                stream=True,
+                timeout=15,
+            ) as response:
+                response.raise_for_status()
+                header = response.raw.read(DRM_HEADER_BYTES)
+        except requests.RequestException:
+            continue
+        if has_mp4_drm_markers(header):
+            raise RuntimeError(
+                "检测到 B站课程使用 DRM 加密媒体流，yt-dlp 和 FFmpeg 无法处理。"
+                "已在完整下载前停止，请使用 B站官方缓存或联系课程提供方。"
+            )
+
+
 def _codec(metadata: dict, key: str) -> str:
     direct = str(metadata.get(key) or "")
     if direct and direct != "none":
@@ -173,6 +222,8 @@ def download_with_ytdlp(
 
     platform = detect_platform(url)
     metadata = get_metadata(url, platform, settings)
+    if platform == "bilibili":
+        reject_bilibili_course_drm(url, metadata)
     output_template = str(output_dir / "%(id)s.%(ext)s")
     command = [
         sys.executable,
