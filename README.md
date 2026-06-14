@@ -1,7 +1,5 @@
 # Video Downloader CLI
 
-[![CI](https://github.com/yizecoder/video-downloader-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/yizecoder/video-downloader-cli/actions/workflows/ci.yml)
-
 Windows 优先的视频与音频下载工具。默认下载平台返回的最高可用画质，也可提取
 MP3，并支持严格的最低画质检查。
 
@@ -217,8 +215,7 @@ python scripts\prepublish_check.py
 python -m pip check
 ```
 
-CI 在 Windows 上覆盖 Python 3.10 和较新稳定版本，单元测试使用模拟数据，不访问
-真实视频网站。真实平台验证只在发布前手工执行。
+单元测试使用模拟数据，不访问真实视频网站。真实平台验证只在发布前手工执行。
 
 ## 隐私与安全
 
