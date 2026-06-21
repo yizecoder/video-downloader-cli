@@ -13,6 +13,8 @@ MP3，并支持严格的最低画质检查。
 - MP3 音频提取
 - `720p`、`1080p`、`4k` 严格最低画质，不满足时停止
 - 单链接、批量和 Windows 交互模式
+- 从 UTF-8 文本文件批量读取链接，支持注释、空行和自动去重
+- 自动清理 B站视频链接中的跟踪参数，并保留分 P 参数
 - 抖音分享短链、`/video/ID` 和 `/jingxuan?modal_id=ID`
 - Windows 长中文文件名兼容处理
 - B站与 YouTube Cookie 完全隔离
@@ -91,6 +93,12 @@ python main.py --batch "URL1" "URL2"
 
 # 批量 MP3
 python main.py --batch "URL1" "URL2" --audio
+
+# 从文本文件批量下载（每行一个 URL，支持 # 注释和空行）
+python main.py --file urls.example.txt
+
+# 文件、单个链接和批量参数可以组合，重复链接只处理一次
+python main.py "URL1" --batch "URL2" --file urls.example.txt
 ```
 
 默认输出到 `downloads/`。视频文件名会标记实际清晰度，例如 `_1080P.mp4`、

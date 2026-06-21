@@ -28,7 +28,9 @@ from video_downloader.utils import (
     is_http_url,
     normalize_media_url,
     normalize_quality,
+    read_url_file,
     sanitize_filename,
+    unique_media_urls,
     validate_minimum_quality,
 )
 
@@ -85,6 +87,33 @@ class CoreTests(unittest.TestCase):
             ),
             "https://www.douyin.com/video/7649636894703095081",
         )
+
+    def test_bilibili_tracking_parameters_are_removed_but_page_is_kept(self):
+        self.assertEqual(
+            normalize_media_url(
+                "https://www.bilibili.com/video/BV1example/?p=2"
+                "&spm_id_from=333.1&vd_source=abc#reply"
+            ),
+            "https://www.bilibili.com/video/BV1example/?p=2",
+        )
+
+    def test_url_file_supports_comments_blank_lines_and_deduplication(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "urls.txt"
+            path.write_text(
+                "# 课程列表\n\n"
+                "https://www.bilibili.com/video/BV1example/?p=1&vd_source=abc\n"
+                "https://www.bilibili.com/video/BV1example/?p=1&spm_id_from=333\n"
+                "https://youtu.be/example\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                unique_media_urls(read_url_file(path)),
+                [
+                    "https://www.bilibili.com/video/BV1example/?p=1",
+                    "https://youtu.be/example",
+                ],
+            )
 
     def test_filename_sanitizing(self):
         self.assertEqual(sanitize_filename('a:b/c*?'), "a_b_c__")

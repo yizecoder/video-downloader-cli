@@ -5,7 +5,7 @@ import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 BROWSER_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -42,11 +42,36 @@ def is_http_url(source: str) -> bool:
 
 def normalize_media_url(url: str) -> str:
     parsed = urlparse(url)
-    if "douyin.com" in parsed.netloc.lower():
+    hostname = (parsed.hostname or "").lower()
+    if hostname == "douyin.com" or hostname.endswith(".douyin.com"):
         modal_id = parse_qs(parsed.query).get("modal_id", [""])[0]
         if modal_id.isdigit():
             return f"https://www.douyin.com/video/{modal_id}"
+    if (
+        (hostname == "bilibili.com" or hostname.endswith(".bilibili.com"))
+        and parsed.path.startswith("/video/")
+    ):
+        query = parse_qs(parsed.query)
+        clean_query = {"p": query["p"]} if "p" in query else {}
+        return urlunparse(parsed._replace(query=urlencode(clean_query, doseq=True), fragment=""))
     return url
+
+
+def read_url_file(path: str | Path) -> list[str]:
+    """读取每行一个 URL 的 UTF-8 文本文件，忽略空行和整行注释。"""
+    source = Path(path)
+    try:
+        lines = source.read_text(encoding="utf-8-sig").splitlines()
+    except FileNotFoundError as exc:
+        raise ValueError(f"URL 文件不存在：{source}") from exc
+    except OSError as exc:
+        raise ValueError(f"无法读取 URL 文件：{source}（{exc}）") from exc
+    return [line.strip() for line in lines if line.strip() and not line.lstrip().startswith("#")]
+
+
+def unique_media_urls(urls: list[str]) -> list[str]:
+    """规范化 URL 并按首次出现顺序去重。"""
+    return list(dict.fromkeys(normalize_media_url(url) for url in urls))
 
 
 def detect_platform(url: str) -> str:
