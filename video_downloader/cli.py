@@ -10,7 +10,7 @@ from pathlib import Path
 from .config import Settings, load_settings
 from .core import download_media
 from .models import DownloadResult
-from .utils import inspect_cookie_file
+from .utils import inspect_cookie_file, read_url_file, unique_media_urls
 
 VERSION = "2.0.0"
 
@@ -218,6 +218,13 @@ def build_parser() -> argparse.ArgumentParser:
     mode.add_argument("--audio", action="store_true", help="仅下载 MP3 音频")
     parser.add_argument("--batch", nargs="+", metavar="URL", help="批量下载")
     parser.add_argument(
+        "-f",
+        "--file",
+        type=Path,
+        metavar="FILE",
+        help="从 UTF-8 文本文件读取链接（每行一个，支持空行和 # 注释）",
+    )
+    parser.add_argument(
         "--min-quality",
         choices=["best", "720p", "1080p", "4k"],
         default="best",
@@ -236,10 +243,21 @@ def main() -> None:
         raise SystemExit(0 if check_environment(settings) else 1)
     selected_mode = "audio" if args.audio else "video"
     try:
-        if args.batch:
-            batch_process(args.batch, selected_mode, args.min_quality, settings)
-        elif args.source:
-            process_url(args.source, selected_mode, args.min_quality, settings)
+        urls = ([args.source] if args.source else []) + (args.batch or [])
+        if args.file:
+            file_urls = read_url_file(args.file)
+            print(f"从文件读取到 {len(file_urls)} 个链接：{args.file}")
+            if not file_urls and not urls:
+                raise ValueError(f"URL 文件中没有可处理的链接：{args.file}")
+            urls.extend(file_urls)
+        unique_urls = unique_media_urls(urls)
+        duplicate_count = len(urls) - len(unique_urls)
+        if duplicate_count:
+            print(f"已忽略 {duplicate_count} 个重复链接。")
+        if len(unique_urls) > 1:
+            batch_process(unique_urls, selected_mode, args.min_quality, settings)
+        elif unique_urls:
+            process_url(unique_urls[0], selected_mode, args.min_quality, settings)
         else:
             interactive_mode(settings)
     except KeyboardInterrupt:

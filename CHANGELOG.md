@@ -4,6 +4,12 @@ All notable changes are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Support loading URLs from a UTF-8 text file with comments, blank lines, and
+  ordered deduplication.
+- Remove Bilibili video tracking parameters while preserving the part number.
+
 ### Fixed
 
 - Restore authenticated YouTube downloads by installing the yt-dlp EJS
